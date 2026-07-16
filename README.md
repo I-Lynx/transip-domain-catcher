@@ -1,201 +1,175 @@
-# TransIP Domain Catcher
+# TransIP Domain Catcher (Private Key Authentication)
 
-[![GitHub Stars](https://img.shields.io/github/stars/Bjornftw/transip-domain-catcher?style=flat-square)](https://github.com/Bjornftw/transip-domain-catcher/stargazers)
-[![Docker Pulls](https://img.shields.io/docker/pulls/bjornftw/transip-domain-catcher?style=flat-square)](https://hub.docker.com/r/bjornftw/transip-domain-catcher)
-[![Docker Image Size](https://img.shields.io/docker/image-size/bjornftw/transip-domain-catcher?style=flat-square)](https://hub.docker.com/r/bjornftw/transip-domain-catcher)
+Automatically monitor domains and register them as soon as they become available through the TransIP API.
 
-A tool to automatically monitor and register domains coming out of quarantine or becoming available for registration. This tool uses the TransIP API v6 to check domain availability and register domains when they become available.
-
-> ⚠️ **IMPORTANT FINANCIAL WARNING**: When this tool successfully registers a domain, TransIP will **automatically generate an invoice** that you are obligated to pay. Domain registrations **cannot be canceled** once completed. Please ensure you only monitor domains you genuinely intend to purchase.
+This fork adds support for **TransIP Key Pair authentication**, removing the need for manually generated access tokens that expire after a limited period.
 
 ## Features
 
-- Monitor multiple domains simultaneously
-- Automatic domain registration when domains become available
-- Configurable check frequency
-- Detailed logging
-- Simple Docker or Node.js deployment
+* ✅ Automatic domain availability checks
+* ✅ Automatic domain registration when a domain becomes available
+* ✅ Docker support
+* ✅ TransIP API v6 support
+* ✅ Secure Key Pair authentication
+* ✅ Automatic generation of short-lived API access tokens
+* ✅ Configurable check interval
+* ✅ Multiple domain monitoring
 
-## Prerequisites
+## Why this fork?
 
-- Node.js 14.x or higher (for Node.js approach)
-- Docker and docker-compose (for Docker approach, recommended)
-- TransIP account with API v6 access enabled
+The original project used a manually generated TransIP access token:
 
-## Getting Started
-
-### Obtaining a TransIP Access Token
-
-1. Log in to your TransIP control panel
-2. Go to "My Account" > "API"
-3. Generate an Access Token
-4. Copy the displayed access token immediately (it's only shown once)
-
-**Important Notes on Access Token:**
-- The access token is am Acces Token that looks like a long string of random 
-  characters.
-- Example format: `eyJ0e...`
-- Copy the entire token without any extra spaces or quotes
-
-### Required Configuration
-
-The application needs these configuration values:
-
-- `TRANSIP_ACCESS_TOKEN`: Your TransIP access token (from steps above)
-- `DOMAINS`: Comma-separated list of domains to monitor (e.g., `example.com,example.org`)
-- `CHECK_INTERVAL_SECONDS`: How often to check domain availability (in seconds)
-
-> **⚠️ Rate Limit Warning**: TransIP API has rate limits. Setting too low a check interval may result in your requests being rate-limited. Consider using 15-30 seconds as a reasonable interval.
-
-## Quick Start
-
-The fastest way to get started is with Docker:
-
-```bash
-docker run -d \
-  --name transip-domain-catcher \
-  --restart unless-stopped \
-  -e TRANSIP_ACCESS_TOKEN=your_access_token_here \
-  -e CHECK_INTERVAL_SECONDS=15 \
-  -e DOMAINS=example.com,example.org \
-  -v "$(pwd)/logs:/usr/src/app/logs" \
-  -v "$(pwd)/config:/usr/src/app/config" \
-  bjornftw/transip-domain-catcher:latest
+```
+TRANSIP_ACCESS_TOKEN
 ```
 
-Just replace `your_access_token` with your TransIP API token and the domains with the ones you want to monitor!
+These tokens have a limited lifetime and require manual renewal.
 
-## Installation
+This fork adds support for the official TransIP authentication flow:
 
-### Option 1: Docker (Recommended)
-
-```bash
-docker pull bjornftw/transip-domain-catcher
+```
+Private Key
+    ↓
+RSA-SHA512 signature
+    ↓
+TransIP Authentication API
+    ↓
+Temporary Access Token
+    ↓
+TransIP API
 ```
 
-### Option 2: Clone from GitHub
+This allows the container to run continuously without manual token renewal.
 
-```bash
-git clone https://github.com/Bjornftw/transip-domain-catcher.git
-cd transip-domain-catcher
+## Requirements
+
+* Docker
+* A TransIP account
+* A TransIP API Key Pair
+
+## TransIP Key Pair Setup
+
+1. Log in to the TransIP control panel.
+2. Create an API Key Pair.
+3. Download the private key.
+4. Store the private key locally.
+
+Example:
+
+```
+config/transip.key
 ```
 
-## Usage
+⚠️ Never commit this file to Git.
 
-There are two ways to run this application:
+The private key is ignored through `.gitignore`.
 
-<table>
-<tr>
-<td width="50%" align="center">
-<h3>🐳 Docker (Recommended)</h3>
-</td>
-<td width="50%" align="center">
-<h3>⚙️ Node.js</h3>
-</td>
-</tr>
-</table>
+## Configuration
 
-### 🐳 Docker Approach (Recommended)
+Create a `.env` file:
 
-Easy deployment with built-in restart and isolation.
+```env
+TRANSIP_USERNAME=your_transip_username
+```
 
-> ⚠️ **Reminder**: Only include domains you truly intend to purchase in the DOMAINS variable, as successful registrations will incur non-cancellable charges.
+Configure your domains in `docker-compose.yml`:
 
-#### Setup with docker-compose
+```yaml
+environment:
+  - TRANSIP_USERNAME=${TRANSIP_USERNAME}
+  - TRANSIP_PRIVATE_KEY_FILE=/usr/src/app/config/transip.key
+  - CHECK_INTERVAL_SECONDS=15
+  - DOMAINS=example.com,example.org
+```
 
-1. Edit your environment in `docker-compose.yml`:
-   ```yaml
-   environment:
-     - TRANSIP_ACCESS_TOKEN=your_access_token
-     - DOMAINS=example.com,example.org
-     - CHECK_INTERVAL_SECONDS=15
-   ```
+## Running with Docker Compose
 
-2. Start the container:
-   ```bash
-   docker-compose up -d
-   ```
-
-3. View logs:
-   ```bash
-   docker-compose logs -f
-   ```
-
-#### Test TransIP Credentials in Docker
+Build and start:
 
 ```bash
-docker run --rm \
-  -e TRANSIP_ACCESS_TOKEN=your_access_token \
-  bjornftw/transip-domain-catcher npm run test:credentials
+docker compose up --build
 ```
-### ⚙️ Node.js Approach
 
-Direct installation on your system.
+Run in the background:
 
-> ⚠️ **Reminder**: Only include domains you truly intend to purchase, as successful registrations will incur non-cancellable charges.
+```bash
+docker compose up -d
+```
 
-#### Setup with Node.js
+View logs:
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+docker compose logs -f
+```
 
-2. Configure your `.env` file:
-   ```
-   TRANSIP_ACCESS_TOKEN=your_access_token
-   DOMAINS=example.com,example.org
-   CHECK_INTERVAL_SECONDS=15
-   ```
+## File Structure
 
-3. Start the application:
-   ```bash
-   npm start
-   ```
+```
+.
+├── config
+│   ├── domains.json
+│   └── transip.key        (not committed)
+├── logs                   (not committed)
+├── src
+│   ├── auth
+│   │   └── tokenManager.js
+│   ├── domainCatcher.js
+│   ├── index.js
+│   └── transipClient.js
+├── docker-compose.yml
+└── Dockerfile
+```
 
-   > **Note**: For production use, consider a process manager like [PM2](https://pm2.keymetrics.io/) to keep the application running.
+## Security Notes
 
-#### Test TransIP Credentials with Node.js
+The following files should never be committed:
+
+```
+.env
+config/transip.key
+logs/
+```
+
+The application runs inside Docker as a non-root user.
+
+## Legacy Access Token Support
+
+For backwards compatibility, an existing TransIP access token can still be used:
+
+```env
+TRANSIP_ACCESS_TOKEN=your_token_here
+```
+
+However, Key Pair authentication is recommended.
+
+## Development
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Run locally:
+
+```bash
+npm start
+```
+
+Test authentication:
 
 ```bash
 npm run test:credentials
 ```
 
-## Logs
+## Credits
 
-Logs are stored in the `logs` directory with daily rotation.
+Original project:
 
-## Development
+Bjornftw/transip-domain-catcher
 
-### Running Tests
-
-```
-npm test
-```
-
-## Contributing
-
-Contributions are welcome! Here's how you can contribute:
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b my-new-feature`
-3. Commit your changes: `git commit -am 'Add some feature'`
-4. Push to the branch: `git push origin my-new-feature`
-5. Submit a pull request
+This fork continues development with additional TransIP Key Pair authentication support.
 
 ## License
 
-[MIT](LICENSE)
-
-## Disclaimer
-
-This tool is provided as-is. Please use responsibly and in accordance with all applicable terms of service for domain registrars.
-
-## Support the Project
-
-If you find this tool useful, consider:
-
-- ⭐ Starring the repository on GitHub
-- 🐳 Leaving a star on Docker Hub 
-- 🐞 Reporting bugs by creating issues
-- 🛠️ Submitting pull requests for features or fixes
+MIT License
