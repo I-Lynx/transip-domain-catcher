@@ -211,6 +211,13 @@ config/transip.key
 config/transip-token.json
 logs/
 ```
+.env
+config/transip.key
+config/transip-token.json
+logs/
+```
+
+The application runs inside Docker as a non-root user.
 
 The application runs inside Docker as a non-root user.
 
