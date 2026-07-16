@@ -98,22 +98,19 @@ The private key is used only to request temporary TransIP access tokens.
 Create a local `.env` file:
 
 ```env
+# TransIP authentication
 TRANSIP_USERNAME=your_transip_username
+TRANSIP_PRIVATE_KEY_FILE=/usr/src/app/config/transip.key
 TRANSIP_TOKEN_LABEL=transip-domain-catcher-docker
+
+# Domain monitoring
+DOMAINS=example.com, example.org
+CHECK_INTERVAL_SECONDS=60
 ```
 
 The token label is used to identify the generated TransIP access token.
 
-Configure your domains in `docker-compose.yml`:
-
-```yaml
-environment:
-  - TRANSIP_USERNAME=${TRANSIP_USERNAME}
-  - TRANSIP_PRIVATE_KEY_FILE=/usr/src/app/config/transip.key
-  - TRANSIP_TOKEN_LABEL=${TRANSIP_TOKEN_LABEL}
-  - CHECK_INTERVAL_SECONDS=15
-  - DOMAINS=example.com,example.org
-```
+No need to configure `docker-compose.yml`
 
 ---
 
@@ -214,6 +211,13 @@ config/transip.key
 config/transip-token.json
 logs/
 ```
+.env
+config/transip.key
+config/transip-token.json
+logs/
+```
+
+The application runs inside Docker as a non-root user.
 
 The application runs inside Docker as a non-root user.
 
@@ -246,9 +250,10 @@ npm run test:credentials
 ## Credits
 
 Original project:
+
 Bjornftw/transip-domain-catcher
 
-This fork continues development with additional TransIP Key Pair authentication support, automatic token management, and Docker restart-safe authentication.
+This fork continues development with additional TransIP Key Pair authentication support.
 
 Created with the excellent help of ChatGPT by OpenAI, which assisted with architecture decisions, debugging, implementation improvements, and documentation.
 
