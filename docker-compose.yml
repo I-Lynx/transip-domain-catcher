@@ -15,6 +15,10 @@ services:
       - DOMAINS=${DOMAINS}
       - CHECK_INTERVAL_SECONDS=${CHECK_INTERVAL_SECONDS}
 
+      - NOTIFICATION_ENABLED=${NOTIFICATION_ENABLED}
+      - NOTIFICATION_PROVIDER=${NOTIFICATION_PROVIDER}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
     volumes:
       - ./config:/usr/src/app/config
       - ./logs:/usr/src/app/logs

@@ -1,6 +1,6 @@
 {
   "name": "transip-domain-catcher",
-  "version": "0.1.0",
+  "version": "1.2.0",
   "description": "Tool to automatically catch domains coming out of quarantine",
   "main": "src/index.js",
   "scripts": {
@@ -11,9 +11,13 @@
   "keywords": [
     "domain",
     "transip",
-    "api"
+    "api",
+    "docker",
+    "domain-catcher",
+    "telegram",
+    "automation"
   ],
-  "author": "",
+  "author": "Bjornftw / I-Lynx contributors",
   "license": "MIT",
   "dependencies": {
     "axios": "^1.6.7",
@@ -21,5 +25,9 @@
   },
   "devDependencies": {
     "jest": "^29.7.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/I-Lynx/transip-domain-catcher.git"
   }
 }
