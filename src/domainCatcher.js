@@ -1,6 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const transipClient = require('./transipClient');
+const notifier = require('./notifications/notifier');
 
 /**
  * Domain acquisition and monitoring orchestration system
@@ -21,10 +22,19 @@ class DomainCatcher {
   }
 
   /**
+   * Safe notification wrapper.
+   * Telegram failures should never stop domain monitoring.
+   */
+  async sendNotification(message) {
+    try {
+      await notifier.send(message);
+    } catch (error) {
+      console.error(`📱 Telegram notification failed: ${error.message}`);
+    }
+  }
+
+  /**
    * Parse domain acquisition targets from configuration sources
-   * Implements a multi-source fallback strategy with env var priority
-   * @returns {Promise<void>} Resolves when domain list is loaded
-   * @throws {Error} On I/O or parsing failures
    */
   async loadDomains() {
     const colors = {
@@ -41,18 +51,23 @@ class DomainCatcher {
       const envDomains = process.env.DOMAINS;
       
       if (envDomains) {
-        this.domains = envDomains.split(',').map(domain => domain.trim()).filter(Boolean);
-        console.log(`\n${colors.green}✅ Loaded ${colors.bright}${this.domains.length} domain(s)${colors.reset} from environment variables`);
+        this.domains = envDomains
+          .split(',')
+          .map(domain => domain.trim())
+          .filter(Boolean);
+
+        console.log(`\n${colors.green}✅ Loaded ${colors.bright}${this.domains.length}${colors.reset}${colors.green} domain(s) from environment variables${colors.reset}`);
       } else {
         const data = await fs.readFile(this.domainConfigPath, 'utf8');
         this.domains = JSON.parse(data);
-        console.log(`\n${colors.green}✅ Loaded ${colors.bright}${this.domains.length} domain(s)${colors.reset} from config file`);
+        console.log(`\n${colors.green}✅ Loaded ${colors.bright}${this.domains.length}${colors.reset}${colors.green} domain(s) from config file${colors.reset}`);
       }
       
       console.log(`${colors.blue}📋 Domains to monitor:${colors.reset}`);
       this.domains.forEach(domain => {
         console.log(`  ${colors.yellow}→ ${domain}${colors.reset}`);
       });
+
       console.log('');
     } catch (error) {
       console.error(`${colors.red}❌ Failed to load domains: ${error.message}${colors.reset}`);
@@ -61,22 +76,20 @@ class DomainCatcher {
   }
 
   /**
-   * Persist domain status events to filesystem for audit and forensics
-   * Implements atomic append operations with proper error handling
-   * 
-   * @param {string} domain - The domain name that generated the event
-   * @param {string} status - Normalized status code (uppercase)
-   * @param {string} message - Human-readable event description
-   * @returns {Promise<void>} Resolves when log entry is persisted
+   * Persist domain status events to filesystem
    */
   async logEvent(domain, status, message) {
     try {
       const timestamp = new Date().toISOString();
       const logEntry = `${timestamp} - Domain: ${domain} - Status: ${status} - ${message}\n`;
       
-      await fs.mkdir(this.logPath, { recursive: true }).catch(err => {});
-      
-      const logFile = path.join(this.logPath, `domain-catcher-${new Date().toISOString().split('T')[0]}.log`);
+      await fs.mkdir(this.logPath, { recursive: true });
+
+      const logFile = path.join(
+        this.logPath,
+        `domain-catcher-${new Date().toISOString().split('T')[0]}.log`
+      );
+
       await fs.appendFile(logFile, logEntry);
     } catch (error) {
       console.error('Failed to log event:', error);
@@ -85,16 +98,6 @@ class DomainCatcher {
 
   /**
    * Primary domain monitoring and acquisition routine
-   * Implements the core business logic of domain registration
-   * 
-   * Process flow:
-   * 1. Load target domains from configuration sources
-   * 2. For each domain, check availability status via TransIP API
-   * 3. If domain becomes available, execute registration sequence
-   * 4. Track successful registrations to prevent duplicates
-   * 5. Log all events for audit trail
-   * 
-   * @returns {Promise<void>} Resolves when all domains have been processed
    */
   async checkAndRegisterDomains() {
     await this.loadDomains();
@@ -109,21 +112,68 @@ class DomainCatcher {
       
       if (availability.status === 'free') {
         console.log(`🎯 Domain ${domain} is available! Attempting to register...`);
-        await this.logEvent(domain, 'FREE', 'Domain is available for registration');
-        
+
+        await this.logEvent(
+          domain,
+          'FREE',
+          'Domain is available for registration'
+        );
+
+        await this.sendNotification(
+`🎯 <b>Domein beschikbaar!</b>
+
+🌐 <b>${domain}</b>
+
+Registratie wordt geprobeerd...`
+        );
+
         const result = await transipClient.registerDomain(domain);
         
         if (result.success) {
           console.log(`🎉 Successfully registered ${domain}!`);
-          await this.logEvent(domain, 'REGISTERED', 'Domain registration successful');
+
+          await this.logEvent(
+            domain,
+            'REGISTERED',
+            'Domain registration successful'
+          );
+
+          await this.sendNotification(
+`🚀 <b>Domein geregistreerd!</b>
+
+🌐 <b>${domain}</b>
+
+TransIP Domain Catcher heeft het domein succesvol geregistreerd.`
+          );
+
           this.registeredDomains.push(domain);
+
         } else {
           console.error(`❌ Failed to register ${domain}: ${result.message}`);
-          await this.logEvent(domain, 'REGISTRATION_FAILED', result.message);
+
+          await this.logEvent(
+            domain,
+            'REGISTRATION_FAILED',
+            result.message
+          );
+
+          await this.sendNotification(
+`❌ <b>Domein registratie mislukt</b>
+
+🌐 <b>${domain}</b>
+
+${result.message}`
+          );
         }
+
       } else {
         console.log(`ℹ️ ${domain} is not available for registration`);
-        await this.logEvent(domain, 'UNAVAILABLE', 'Domain not available for registration');
+
+        await this.logEvent(
+          domain,
+          'UNAVAILABLE',
+          'Domain not available for registration'
+        );
       }
     }
   }
