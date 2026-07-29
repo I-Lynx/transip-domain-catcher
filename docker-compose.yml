@@ -1,9 +1,13 @@
 services:
   transip-domain-catcher:
-    image: bjornftw/transip-domain-catcher
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    image: i-lynx/transip-domain-catcher:latest
+
     container_name: transip-domain-catcher
     restart: unless-stopped
-
     environment:
       - TRANSIP_USERNAME=${TRANSIP_USERNAME}
       - TRANSIP_PRIVATE_KEY_FILE=${TRANSIP_PRIVATE_KEY_FILE}
