@@ -1,4 +1,4 @@
-# TransIP Domain Catcher (Private Key Authentication)
+# TransIP Domain Catcher
 
 Automatically monitor domains and register them as soon as they become available through the TransIP API.
 
@@ -22,7 +22,8 @@ The application is designed to run continuously inside Docker without requiring 
 * ✅ Configurable token labels
 * ✅ Configurable check intervals
 * ✅ Multiple domain monitoring
-* ✅ Legacy access token support
+* ✅ Telegram notifications
+* ✅ Environment based configuration
 
 ---
 
@@ -31,7 +32,7 @@ The application is designed to run continuously inside Docker without requiring 
 The original project used manually generated TransIP access tokens:
 
 ```env
-TRANSIP_ACCESS_TOKEN
+TRANSIP_ACCESS_TOKEN=your_token_here
 ```
 
 These tokens have a limited lifetime and require manual renewal.
@@ -71,6 +72,7 @@ You need:
 * Docker
 * A TransIP account
 * A TransIP API Key Pair
+* Optional: A Telegram bot for notifications
 
 ---
 
@@ -106,11 +108,51 @@ TRANSIP_TOKEN_LABEL=transip-domain-catcher-docker
 # Domain monitoring
 DOMAINS=example.com, example.org
 CHECK_INTERVAL_SECONDS=60
+
+# Telegram notifications
+NOTIFICATION_ENABLED=true
+NOTIFICATION_PROVIDER=telegram
+
+TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_CHAT_ID=your_chat_id
 ```
 
-The token label is used to identify the generated TransIP access token.
+---
 
-No need to configure `docker-compose.yml`
+## Telegram Notifications
+
+The application can send Telegram notifications for:
+
+* Application startup
+* Authentication failures
+* Domain availability events
+* Successful registrations
+* Registration failures
+
+To find your Telegram chat ID:
+1. Start a conversation with your Telegram bot.
+2. Send a message.
+3. Open:
+
+```text
+https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates
+```
+
+4. Find the value:
+
+```
+{
+  "chat": {
+    "id": 123456789
+  }
+}
+```
+
+Use this value:
+
+```env
+TELEGRAM_CHAT_ID=123456789
+```
 
 ---
 
@@ -181,7 +223,6 @@ When this variable is present, it takes priority over Key Pair authentication.
 ```
 .
 ├── config
-│   ├── domains.json
 │   ├── transip.key              (not committed)
 │   └── transip-token.json       (generated, not committed)
 │
@@ -190,6 +231,9 @@ When this variable is present, it takes priority over Key Pair authentication.
 ├── src
 │   ├── auth
 │   │   └── tokenManager.js
+│   ├── notifications
+│   │   ├── notifier.js
+│   │   └── telegramNotifier.js
 │   ├── domainCatcher.js
 │   ├── index.js
 │   └── transipClient.js
@@ -211,13 +255,6 @@ config/transip.key
 config/transip-token.json
 logs/
 ```
-.env
-config/transip.key
-config/transip-token.json
-logs/
-```
-
-The application runs inside Docker as a non-root user.
 
 The application runs inside Docker as a non-root user.
 
@@ -253,9 +290,13 @@ Original project:
 
 Bjornftw/transip-domain-catcher
 
-This fork continues development with additional TransIP Key Pair authentication support.
+This fork continues development with:
+* TransIP Key Pair authentication
+* Docker improvements
+* Environment based configuration
+* Telegram notifications
 
-Created with the excellent help of ChatGPT by OpenAI, which assisted with architecture decisions, debugging, implementation improvements, and documentation.
+Created with the excellent help of ChatGPT by OpenAI during development and troubleshooting.
 
 ---
 
