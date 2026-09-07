@@ -7,7 +7,7 @@ services:
     image: i-lynx/transip-domain-catcher:latest
 
     container_name: transip-domain-catcher
-    restart: unless-stopped
+    restart: always
     environment:
       - TRANSIP_USERNAME=${TRANSIP_USERNAME}
       - TRANSIP_PRIVATE_KEY_FILE=${TRANSIP_PRIVATE_KEY_FILE}

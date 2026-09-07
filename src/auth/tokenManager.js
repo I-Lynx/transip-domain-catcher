@@ -90,7 +90,7 @@ class TokenManager {
 
     this.token = response.data.token;
 
-    this.tokenExpiry = new Date(Date.now() + (25 * 60 * 1000));
+    this.tokenExpiry = new Date(Date.now() + (29 * 60 * 1000));
 
     fs.writeFileSync(
       this.tokenFile,
@@ -99,11 +99,6 @@ class TokenManager {
         expiry: this.tokenExpiry
       }, null, 2)
     );
-
-    // TransIP tokens are short lived.
-    // Refresh a little before expiry.
-    this.tokenExpiry = new Date(Date.now() + (25 * 60 * 1000));
-
     return this.token;
   }
 }

@@ -130,7 +130,6 @@ Registratie wordt geprobeerd...`
         const result = await transipClient.registerDomain(domain);
         
         if (result.success) {
-          console.log(`🎉 Successfully registered ${domain}!`);
 
           await this.logEvent(
             domain,
